@@ -194,18 +194,13 @@ Our custom bundle (`internal/js/bundle-entry.js`):
 ### To sync
 
 ```bash
-# Update the submodule
-cd defuddle
-git pull origin main
-cd ..
+# With mise (recommended)
+mise run sync
 
-# Install JS deps and rebuild bundle
-npm install
-npx webpack
-
-# Verify
+# Or manually
+cd defuddle && git pull origin main && cd ..
+npm install && npx webpack
 go test ./...
-go run ./cmd/defuddle/ -m https://stephango.com/saw
 ```
 
 ### What can break
@@ -230,17 +225,54 @@ QuickJS is ES2023 compliant but has no Web/Node APIs. `internal/js/polyfills.js`
 | `atob()` | Base64 fallback for htmlparser2 |
 | `performance.now()` | Defuddle profiling; shimmed to `Date.now()` |
 
+## Development
+
+This project uses [mise](https://mise.jdx.dev/) for tool versions and task running.
+
+```bash
+# Setup
+mise install              # Install node + go
+mise run install          # Install npm deps
+
+# Common tasks
+mise run bundle           # Rebuild JS bundle
+mise run bundle-check     # Verify committed bundle is up to date
+mise run build-cli        # Build CLI to bin/defuddle
+mise run test             # Run Go tests
+mise run lint             # Run go vet
+mise run ci               # Full CI pipeline (bundle-check + lint + test)
+mise run sync             # Update defuddle submodule + rebuild
+mise run clean            # Remove build artifacts
+```
+
+### CI
+
+- **CI workflow** (`.github/workflows/ci.yml`): runs on push/PR to main — verifies the committed bundle is up to date, runs `go vet` and `go test`.
+- **Release workflow** (`.github/workflows/release.yml`): triggered by `v*` tags — cross-compiles for linux/darwin/windows (amd64/arm64) and creates a GitHub Release with binaries.
+
+To release:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
 ## Project structure
 
 ```
 go-defuddle/
 ├── defuddle.go              # Go library (Parser, Result, Options)
+├── defuddle_test.go         # Go tests
 ├── defuddle/                # git submodule → github.com/kepano/defuddle
 ├── cmd/defuddle/main.go     # CLI
 ├── internal/js/
 │   ├── bundle-entry.js      # Webpack entry (wires linkedom + defuddle)
 │   ├── polyfills.js         # QuickJS polyfills (Buffer, URL, atob, etc.)
 │   └── defuddle-bundle.js   # Built bundle (~430KB, embedded via go:embed)
+├── .github/workflows/
+│   ├── ci.yml               # CI: bundle-check + vet + test
+│   └── release.yml          # Release: cross-compile + GitHub Release
+├── mise.toml                # Tool versions + task definitions
 ├── webpack.config.js        # Webpack config
 ├── tsconfig.json            # TypeScript config for webpack
 ├── package.json             # npm deps (linkedom, webpack, ts-loader)

@@ -1,0 +1,70 @@
+[tools]
+node = "22"
+go = "1.24"
+
+[tasks.install]
+description = "Install npm dependencies"
+run = "npm install"
+
+[tasks.bundle]
+description = "Build the defuddle JS bundle for QuickJS"
+depends = ["install"]
+run = "npx webpack"
+
+[tasks.bundle-check]
+description = "Verify committed bundle matches a fresh build"
+depends = ["install"]
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+cp internal/js/defuddle-bundle.js /tmp/defuddle-bundle-before.js
+npx webpack
+if ! diff -q internal/js/defuddle-bundle.js /tmp/defuddle-bundle-before.js > /dev/null 2>&1; then
+  echo "ERROR: committed defuddle-bundle.js is out of date"
+  echo "Run 'mise run bundle' and commit the result"
+  mv /tmp/defuddle-bundle-before.js internal/js/defuddle-bundle.js
+  exit 1
+fi
+echo "OK: bundle is up to date"
+"""
+
+[tasks.build]
+description = "Build the Go binary"
+run = "go build ./..."
+
+[tasks.build-cli]
+description = "Build the CLI binary"
+run = "go build -o bin/defuddle ./cmd/defuddle"
+
+[tasks.test]
+description = "Run Go tests"
+run = "go test -v ./..."
+
+[tasks.lint]
+description = "Run Go linter"
+run = "go vet ./..."
+
+[tasks.ci]
+description = "Run full CI pipeline (bundle check + lint + test)"
+depends = ["bundle-check", "lint", "test"]
+
+[tasks.sync]
+description = "Update defuddle submodule and rebuild bundle"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+echo "==> Updating defuddle submodule..."
+git submodule update --remote defuddle
+echo "==> Installing npm deps..."
+npm install
+echo "==> Rebuilding JS bundle..."
+npx webpack
+echo "==> Running Go tests..."
+go test ./...
+echo ""
+echo "Done. Review changes with 'git diff' and commit."
+"""
+
+[tasks.clean]
+description = "Remove build artifacts"
+run = "rm -rf bin/ node_modules/"

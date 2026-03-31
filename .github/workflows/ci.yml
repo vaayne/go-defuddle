@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Verify bundle is up to date
+        run: |
+          cp internal/js/defuddle-bundle.js /tmp/defuddle-bundle-before.js
+          npx webpack
+          if ! diff -q internal/js/defuddle-bundle.js /tmp/defuddle-bundle-before.js; then
+            echo "::error::defuddle-bundle.js is out of date. Run 'npx webpack' and commit."
+            exit 1
+          fi
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Go build
+        run: go build ./...
+
+      - name: Go test
+        run: go test -v ./...
