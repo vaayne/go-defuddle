@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-04-12
+
+### Changed
+
+- Updated Defuddle submodule to [`3cb89a8`](https://github.com/kepano/defuddle/commit/3cb89a8ca8dfdc29a109ec33ae0efd089970f180) (v0.13.0-162).
+- Rebuilt JS bundle with latest upstream changes including:
+  - YouTube transcript extraction improvements (CJK ranges, multi-speaker support, fallback behaviors)
+  - Configurable fetch option support
+  - HTML parsing enhancements
+
 ## [0.1.0] - 2026-04-03
 
 ### Added
@@ -24,4 +34,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [fastschema/qjs](https://github.com/fastschema/qjs) — QuickJS via Wazero
 - [html-to-markdown v2](https://github.com/JohannesKaufmann/html-to-markdown) — HTML → Markdown
 
+[0.1.1]: https://github.com/vaayne/go-defuddle/releases/tag/v0.1.1
 [0.1.0]: https://github.com/vaayne/go-defuddle/releases/tag/v0.1.0
