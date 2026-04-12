@@ -15,8 +15,6 @@ permissions:
 jobs:
   check-and-update:
     runs-on: ubuntu-latest
-    outputs:
-      updated: ${{ steps.update.outputs.updated }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -108,80 +106,10 @@ jobs:
           go vet ./...
           go test -v ./...
 
-      - name: Stage changes
-        if: steps.update.outputs.updated == 'true'
-        run: |
-          set -euo pipefail
-          git add defuddle internal/js/defuddle-bundle.js
-
-      - name: Get and bump version
-        if: steps.update.outputs.updated == 'true'
-        id: bump_version
-        run: |
-          set -euo pipefail
-
-          # Fetch all tags
-          git fetch --force --tags origin
-
-          # Get latest version tag (sorted by semver)
-          latest_tag=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
-          latest_tag="${latest_tag:-v0.0.0}"
-          echo "Latest tag: $latest_tag"
-
-          # Parse and bump patch version
-          version=${latest_tag#v}
-          major=$(echo "$version" | cut -d. -f1)
-          minor=$(echo "$version" | cut -d. -f2)
-          patch=$(echo "$version" | cut -d. -f3)
-          new_patch=$((patch + 1))
-          new_version="v$major.$minor.$new_patch"
-
-          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
-          echo "display_version=$major.$minor.$new_patch" >> "$GITHUB_OUTPUT"
-          echo "Bumping: $latest_tag -> $new_version"
-
-      - name: Validate upstream tag
-        if: steps.update.outputs.updated == 'true'
-        env:
-          UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
-        run: |
-          set -euo pipefail
-          git check-ref-format --allow-onelevel "refs/tags/$UPSTREAM_TAG"
-
-      - name: Update CHANGELOG
-        if: steps.update.outputs.updated == 'true'
-        env:
-          NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
-          DISPLAY_VERSION: ${{ steps.bump_version.outputs.display_version }}
-          UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
-          UPSTREAM_COMMIT: ${{ steps.upstream.outputs.commit }}
-        run: |
-          set -euo pipefail
-
-          TODAY=$(date +%Y-%m-%d)
-          SHORT_COMMIT="${UPSTREAM_COMMIT:0:7}"
-
-          # Create changelog entry (using printf to avoid heredoc issues)
-          entry=$(printf '## [%s] - %s\n\n### Changed\n\n- Updated Defuddle submodule to [`%s`](https://github.com/kepano/defuddle/commit/%s) (%s).\n- Rebuilt JS bundle with latest upstream changes.\n\n' \
-            "$DISPLAY_VERSION" "$TODAY" "$SHORT_COMMIT" "$UPSTREAM_COMMIT" "$UPSTREAM_TAG")
-
-          # Insert before first version heading
-          awk -v entry="$entry" '
-            !done && /^## \[/ { print entry; done=1 }
-            { print }
-          ' CHANGELOG.md > CHANGELOG.md.new && mv CHANGELOG.md.new CHANGELOG.md
-
-          # Add link reference
-          printf '[%s]: https://github.com/%s/releases/tag/%s\n' \
-            "$DISPLAY_VERSION" "$GITHUB_REPOSITORY" "$NEW_VERSION" >> CHANGELOG.md
-
-          git add CHANGELOG.md
-
-      - name: Commit and push with atomic tag
+      - name: Commit and push changes
         if: steps.update.outputs.updated == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
           UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
           GIT_AUTHOR_NAME: "github-actions[bot]"
           GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
@@ -190,17 +118,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Configure remote with token
+          # Stage changes
+          git add defuddle internal/js/defuddle-bundle.js
+
+          # Commit with upstream tag info
+          git commit -m "⬆️ chore: update defuddle submodule to ${UPSTREAM_TAG}"
+
+          # Push to main
           git remote add push-origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push push-origin HEAD:main
 
-          # Commit (build message with printf to avoid multiline issues)
-          commit_msg=$(printf '⬆️ chore: update defuddle submodule to %s\n\n- Update submodule to latest upstream release\n- Rebuild JS bundle\n- Bump version to %s' "$UPSTREAM_TAG" "$NEW_VERSION")
-          git commit -m "$commit_msg"
-
-          # Create annotated tag
-          git tag -a "$NEW_VERSION" -m "Release ${NEW_VERSION}"
-
-          # Atomic push of both branch and tag
-          git push --atomic push-origin HEAD:main "$NEW_VERSION"
-
-          echo "Released ${NEW_VERSION}"
+          echo "Updated defuddle submodule to ${UPSTREAM_TAG}"
