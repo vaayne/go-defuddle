@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-04-12
+
+### Changed
+
+- Updated Defuddle submodule to [`66049af`](https://github.com/kepano/defuddle/commit/66049af2aab6bd16bc38d24176f3dd19a86a086d) (0.16.0).
+- Rebuilt JS bundle with latest upstream changes.
 ## [0.1.1] - 2026-04-12
 
 ### Changed
@@ -36,3 +42,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.1.1]: https://github.com/vaayne/go-defuddle/releases/tag/v0.1.1
 [0.1.0]: https://github.com/vaayne/go-defuddle/releases/tag/v0.1.0
+[0.1.2]: https://github.com/vaayne/go-defuddle/releases/tag/v0.1.2
