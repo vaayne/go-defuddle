@@ -167,7 +167,7 @@ jobs:
 
 ### Changed
 
-- Updated Defuffle submodule to [\`${SHORT_COMMIT}\`](https://github.com/kepano/defuddle/commit/${UPSTREAM_COMMIT}) (${UPSTREAM_TAG}).
+- Updated Defuddle submodule to [\`${SHORT_COMMIT}\`](https://github.com/kepano/defuddle/commit/${UPSTREAM_COMMIT}) (${UPSTREAM_TAG}).
 - Rebuilt JS bundle with latest upstream changes.
 
 EOF
