@@ -180,7 +180,8 @@ jobs:
       - name: Commit and push with atomic tag
         if: steps.update.outputs.updated == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
+          # Use PAT instead of GITHUB_TOKEN so the Release workflow triggers
+          GH_TOKEN: ${{ secrets.PAT }}
           NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
           UPSTREAM_TAG: ${{ steps.upstream.outputs.tag }}
           GIT_AUTHOR_NAME: "github-actions[bot]"
