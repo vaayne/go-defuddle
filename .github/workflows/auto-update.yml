@@ -161,17 +161,9 @@ jobs:
           TODAY=$(date +%Y-%m-%d)
           SHORT_COMMIT="${UPSTREAM_COMMIT:0:7}"
 
-          # Create changelog entry
-          entry=$(cat <<EOF
-## [${DISPLAY_VERSION}] - ${TODAY}
-
-### Changed
-
-- Updated Defuddle submodule to [\`${SHORT_COMMIT}\`](https://github.com/kepano/defuddle/commit/${UPSTREAM_COMMIT}) (${UPSTREAM_TAG}).
-- Rebuilt JS bundle with latest upstream changes.
-
-EOF
-          )
+          # Create changelog entry (using printf to avoid heredoc issues)
+          entry=$(printf '## [%s] - %s\n\n### Changed\n\n- Updated Defuddle submodule to [`%s`](https://github.com/kepano/defuddle/commit/%s) (%s).\n- Rebuilt JS bundle with latest upstream changes.\n\n' \
+            "$DISPLAY_VERSION" "$TODAY" "$SHORT_COMMIT" "$UPSTREAM_COMMIT" "$UPSTREAM_TAG")
 
           # Insert before first version heading
           awk -v entry="$entry" '
@@ -201,12 +193,9 @@ EOF
           # Configure remote with token
           git remote add push-origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 
-          # Commit
-          git commit -m "⬆️ chore: update defuddle submodule to ${UPSTREAM_TAG}
-
-- Update submodule to latest upstream release
-- Rebuild JS bundle
-- Bump version to ${NEW_VERSION}"
+          # Commit (build message with printf to avoid multiline issues)
+          commit_msg=$(printf '⬆️ chore: update defuddle submodule to %s\n\n- Update submodule to latest upstream release\n- Rebuild JS bundle\n- Bump version to %s' "$UPSTREAM_TAG" "$NEW_VERSION")
+          git commit -m "$commit_msg"
 
           # Create annotated tag
           git tag -a "$NEW_VERSION" -m "Release ${NEW_VERSION}"
